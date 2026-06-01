@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -32,7 +33,8 @@ def run_backup_cycle(
 
     for db in databases:
         object_key = build_backup_key(s3.prefix, db.name, timestamp)
-        temp_file = temp_dir / f"{db.name}-{timestamp.strftime('%Y%m%d-%H%M%S')}.dump"
+        with tempfile.NamedTemporaryFile(delete=False, dir=temp_dir, prefix="pg-backup-", suffix=".dump") as handle:
+            temp_file = Path(handle.name)
         LOGGER.info("Starting backup for %s", db.name)
 
         try:
