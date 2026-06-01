@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 def build_backup_key(prefix: str, db_name: str, timestamp: datetime) -> str:
-    date_path = timestamp.strftime("%Y/%m/%d")
+    date_path = timestamp.strftime("%Y%m%d")
     file_name = f"{db_name}-{timestamp.strftime('%Y%m%d-%H%M%S')}.dump"
     prefix_part = prefix.strip("/")
 

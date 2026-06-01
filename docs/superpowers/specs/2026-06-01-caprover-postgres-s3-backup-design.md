@@ -74,13 +74,13 @@ DATABASES_JSON=[
 Backup files are uploaded to:
 
 ```text
-s3://{S3_BUCKET}/{S3_PREFIX}/{db_name}/{yyyy}/{mm}/{dd}/{db_name}-{timestamp}.dump
+s3://{S3_BUCKET}/{S3_PREFIX}/{db_name}/{yyyymmdd}/{db_name}-{timestamp}.dump
 ```
 
 Example:
 
 ```text
-s3://postgres-backups/caprover/app1/2026/06/01/app1-20260601-030000.dump
+s3://postgres-backups/caprover/app1/20260601/app1-20260601-030000.dump
 ```
 
 If `S3_PREFIX` is empty, the path starts with `{db_name}/...`.

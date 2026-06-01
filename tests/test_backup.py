@@ -57,8 +57,8 @@ def test_run_backup_cycle_uploads_successful_dump(tmp_path, monkeypatch):
         temp_dir=tmp_path,
     )
 
-    assert results == [BackupResult(database="app1", success=True, object_key="caprover/app1/2026/06/01/app1-20260601-030000.dump", error="")]
-    assert fake_client.uploads[0][1:] == ("postgres-backups", "caprover/app1/2026/06/01/app1-20260601-030000.dump")
+    assert results == [BackupResult(database="app1", success=True, object_key="caprover/app1/20260601/app1-20260601-030000.dump", error="")]
+    assert fake_client.uploads[0][1:] == ("postgres-backups", "caprover/app1/20260601/app1-20260601-030000.dump")
     assert list(tmp_path.iterdir()) == []
 
 

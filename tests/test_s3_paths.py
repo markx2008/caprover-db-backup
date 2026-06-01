@@ -8,7 +8,7 @@ def test_build_backup_key_with_prefix():
 
     key = build_backup_key("caprover", "app1", timestamp)
 
-    assert key == "caprover/app1/2026/06/01/app1-20260601-030000.dump"
+    assert key == "caprover/app1/20260601/app1-20260601-030000.dump"
 
 
 def test_build_backup_key_without_prefix():
@@ -16,7 +16,7 @@ def test_build_backup_key_without_prefix():
 
     key = build_backup_key("", "app1", timestamp)
 
-    assert key == "app1/2026/06/01/app1-20260601-030000.dump"
+    assert key == "app1/20260601/app1-20260601-030000.dump"
 
 
 def test_build_backup_key_strips_prefix_slashes():
@@ -24,4 +24,4 @@ def test_build_backup_key_strips_prefix_slashes():
 
     key = build_backup_key("/caprover/", "app1", timestamp)
 
-    assert key == "caprover/app1/2026/06/01/app1-20260601-030000.dump"
+    assert key == "caprover/app1/20260601/app1-20260601-030000.dump"
