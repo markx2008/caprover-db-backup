@@ -104,7 +104,7 @@ def _parse_database(item: object, index: int) -> DatabaseConfig:
     password = _string_field(item, "password", index)
     port = item.get("port")
 
-    if not isinstance(port, int):
+    if type(port) is not int:
         raise ConfigError(f"DATABASES_JSON[{index}].port must be an integer")
 
     return DatabaseConfig(
