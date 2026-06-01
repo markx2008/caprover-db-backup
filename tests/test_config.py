@@ -80,3 +80,16 @@ def test_database_port_rejects_boolean():
 
     with pytest.raises(ConfigError, match="port"):
         load_config(env)
+
+
+@pytest.mark.parametrize("port", [0, -1, 65536])
+def test_database_port_must_be_valid_tcp_port(port):
+    env = base_env()
+    env["DATABASES_JSON"] = (
+        '[{"name":"app1","host":"100.64.0.1","port":'
+        f"{port}"
+        ',"database":"app1_db","username":"postgres","password":"secret"}]'
+    )
+
+    with pytest.raises(ConfigError, match="port"):
+        load_config(env)

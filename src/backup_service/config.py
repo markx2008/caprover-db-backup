@@ -104,8 +104,8 @@ def _parse_database(item: object, index: int) -> DatabaseConfig:
     password = _string_field(item, "password", index)
     port = item.get("port")
 
-    if type(port) is not int:
-        raise ConfigError(f"DATABASES_JSON[{index}].port must be an integer")
+    if type(port) is not int or not 1 <= port <= 65535:
+        raise ConfigError(f"DATABASES_JSON[{index}].port must be an integer from 1 to 65535")
 
     return DatabaseConfig(
         name=name,
