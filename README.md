@@ -4,9 +4,7 @@
 
 ## 網路架構
 
-Tailscale 建議安裝在 CapRover 主機上，不要跑在這個容器裡。
-
-如果 PostgreSQL 或 NAS/MinIO 只在 Tailscale 內網可達，請在 `DATABASES_JSON` 的 `host` 或 `S3_ENDPOINT` 使用 Tailscale IP 或 MagicDNS 名稱。
+備份容器需要能連到 PostgreSQL 和 S3-compatible endpoint。請在 `DATABASES_JSON` 的 `host` 填入容器可連線的 PostgreSQL host，並在 `S3_ENDPOINT` 填入容器可連線的 S3 endpoint。
 
 ## CapRover ENV 範例
 
@@ -18,7 +16,7 @@ TZ=Asia/Taipei
 RUN_ON_START=true
 LOG_LEVEL=INFO
 
-S3_ENDPOINT=http://nas-name.tailnet-name.ts.net:9000
+S3_ENDPOINT=http://s3.example.local:9000
 S3_ACCESS_KEY=change-me
 S3_SECRET_KEY=change-me
 S3_BUCKET=postgres-backups
@@ -27,7 +25,7 @@ S3_PREFIX=caprover
 S3_FORCE_PATH_STYLE=true
 S3_SECURE=false
 
-DATABASES_JSON=[{"name":"app1","host":"100.x.x.x","port":5432,"database":"app1_db","username":"postgres","password":"change-me"},{"name":"app2","host":"postgres-2.tailnet-name.ts.net","port":5432,"database":"app2_db","username":"postgres","password":"change-me"}]
+DATABASES_JSON=[{"name":"app1","host":"postgres-1.example.local","port":5432,"database":"app1_db","username":"postgres","password":"change-me"},{"name":"app2","host":"postgres-2.example.local","port":5432,"database":"app2_db","username":"postgres","password":"change-me"}]
 ```
 
 ## ENV 說明
@@ -52,7 +50,7 @@ DATABASES_JSON=[{"name":"app1","host":"100.x.x.x","port":5432,"database":"app1_d
 [
   {
     "name": "app1",
-    "host": "100.x.x.x",
+    "host": "postgres-1.example.local",
     "port": 5432,
     "database": "app1_db",
     "username": "postgres",
@@ -64,7 +62,7 @@ DATABASES_JSON=[{"name":"app1","host":"100.x.x.x","port":5432,"database":"app1_d
 欄位說明：
 
 - `name`: 備份識別名稱，會用在 log 和 S3 路徑。
-- `host`: PostgreSQL host，可填 CapRover service name、Tailscale IP 或 MagicDNS。
+- `host`: PostgreSQL host，可填 CapRover service name、內網 IP、DNS 名稱或任何容器可連線的位址。
 - `port`: PostgreSQL port，通常是 `5432`。
 - `database`: 要備份的 database 名稱。
 - `username`: PostgreSQL 使用者。
@@ -100,7 +98,7 @@ pg_restore -h <host> -U <user> -d <database> backup.dump
 
 ## 注意事項
 
-- 容器內不跑 Tailscale；Tailscale 請裝在 CapRover 主機。
+- 備份容器本身只負責排程、`pg_dump` 和 S3 上傳；網路連線能力由部署環境提供。
 - ENV 使用通用 `S3_` 命名。
 - 服務不會刪除舊備份；保留策略請在 NAS、MinIO 或 S3 lifecycle 設定。
 - 單一 database 備份失敗不會中斷其他 database 的備份。
