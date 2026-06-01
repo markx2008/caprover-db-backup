@@ -6,6 +6,36 @@
 
 備份容器需要能連到 PostgreSQL 和 S3-compatible endpoint。請在 `DATABASES_JSON` 的 `host` 填入容器可連線的 PostgreSQL host，並在 `S3_ENDPOINT` 填入容器可連線的 S3 endpoint。
 
+```mermaid
+flowchart LR
+    subgraph CapRover[CapRover]
+        App[Backup Container]
+        Scheduler[Python APScheduler]
+        PgDump[pg_dump]
+        Tmp[/tmp 暫存 .dump]
+    end
+
+    Db1[(PostgreSQL DB 1)]
+    Db2[(PostgreSQL DB 2)]
+    S3[(S3-compatible Storage)]
+
+    App --> Scheduler
+    Scheduler --> PgDump
+    PgDump --> Db1
+    PgDump --> Db2
+    PgDump --> Tmp
+    Tmp --> S3
+    App -. 上傳後刪除暫存檔 .-> Tmp
+```
+
+## 備份流程
+
+1. 容器啟動後讀取 ENV，建立 S3 client，並依 `RUN_ON_START` 決定是否立即備份一次。
+2. `APScheduler` 在 Python process 內依 `BACKUP_CRON` 觸發備份，不需要 Linux `cron` daemon。
+3. 每次備份會逐一讀取 `DATABASES_JSON` 裡的 database 設定。
+4. 容器內執行 `pg_dump -Fc`，把每個 database dump 成 `/tmp` 裡的暫存 `.dump` 檔。
+5. `pg_dump` 成功後才上傳到 S3-compatible storage，最後刪除 `/tmp` 暫存檔。
+
 ## CapRover ENV 範例
 
 以下可以直接複製到 CapRover App Configs 的 Environment Variables，再把 placeholder 改成你的實際值：
@@ -28,21 +58,23 @@ S3_SECURE=false
 DATABASES_JSON=[{"name":"app1","host":"postgres-1.example.local","port":5432,"database":"app1_db","username":"postgres","password":"change-me"},{"name":"app2","host":"postgres-2.example.local","port":5432,"database":"app2_db","username":"postgres","password":"change-me"}]
 ```
 
-## ENV 說明
+## ENV 參數說明
 
-- `BACKUP_CRON`: 備份排程，使用 cron 表達式，例如 `0 3 * * *` 代表每天凌晨 3 點。
-- `TZ`: 時區，例如 `Asia/Taipei`。
-- `RUN_ON_START`: 設為 `true` 時，容器啟動後會先立即跑一次備份。
-- `LOG_LEVEL`: log 等級，例如 `INFO`。
-- `S3_ENDPOINT`: S3-compatible endpoint，例如 NAS MinIO 的 URL。
-- `S3_ACCESS_KEY`: S3 access key。
-- `S3_SECRET_KEY`: S3 secret key。
-- `S3_BUCKET`: 備份要上傳到的 bucket。
-- `S3_REGION`: S3 region；MinIO 通常可用 `us-east-1`。
-- `S3_PREFIX`: S3 object key 前綴，例如 `caprover`。
-- `S3_FORCE_PATH_STYLE`: MinIO 建議設為 `true`。
-- `S3_SECURE`: endpoint 使用 HTTP 時設為 `false`，HTTPS 時設為 `true`。
-- `DATABASES_JSON`: PostgreSQL database 清單，JSON array 格式。
+| 參數 | 必填 | 預設值 | 說明 | 範例 |
+| --- | --- | --- | --- | --- |
+| `BACKUP_CRON` | 是 | 無 | 備份排程，使用 cron 表達式。時間會依 `TZ` 解讀。 | `0 3 * * *` |
+| `TZ` | 否 | `UTC` | 排程與備份檔 timestamp 使用的時區。 | `Asia/Taipei` |
+| `RUN_ON_START` | 否 | `false` | 容器啟動後是否立即跑一次備份。 | `true` |
+| `LOG_LEVEL` | 否 | `INFO` | Python logging 等級。 | `INFO` |
+| `S3_ENDPOINT` | 是 | 無 | S3-compatible endpoint URL。 | `http://s3.example.local:9000` |
+| `S3_ACCESS_KEY` | 是 | 無 | S3 access key。 | `change-me` |
+| `S3_SECRET_KEY` | 是 | 無 | S3 secret key。 | `change-me` |
+| `S3_BUCKET` | 是 | 無 | 備份檔要上傳到的 bucket。 | `postgres-backups` |
+| `S3_REGION` | 否 | `us-east-1` | S3 region；MinIO 通常可用 `us-east-1`。 | `us-east-1` |
+| `S3_PREFIX` | 否 | 空字串 | S3 object key 前綴。留空時路徑會直接從 database name 開始。 | `caprover` |
+| `S3_FORCE_PATH_STYLE` | 否 | `true` | 是否使用 path-style S3 URL；MinIO 建議設為 `true`。 | `true` |
+| `S3_SECURE` | 否 | `true` | S3 client 是否使用 HTTPS。HTTP endpoint 請設為 `false`。 | `false` |
+| `DATABASES_JSON` | 是 | 無 | PostgreSQL database 清單，JSON array 格式。 | 見下方範例 |
 
 ## DATABASES_JSON 格式
 
@@ -61,12 +93,14 @@ DATABASES_JSON=[{"name":"app1","host":"postgres-1.example.local","port":5432,"da
 
 欄位說明：
 
-- `name`: 備份識別名稱，會用在 log 和 S3 路徑。
-- `host`: PostgreSQL host，可填 CapRover service name、內網 IP、DNS 名稱或任何容器可連線的位址。
-- `port`: PostgreSQL port，通常是 `5432`。
-- `database`: 要備份的 database 名稱。
-- `username`: PostgreSQL 使用者。
-- `password`: PostgreSQL 密碼。
+| 欄位 | 必填 | 型別 | 說明 | 範例 |
+| --- | --- | --- | --- | --- |
+| `name` | 是 | string | 備份識別名稱，會用在 log 和 S3 路徑。 | `app1` |
+| `host` | 是 | string | PostgreSQL host，可填 CapRover service name、內網 IP、DNS 名稱或任何容器可連線的位址。 | `postgres-1.example.local` |
+| `port` | 是 | integer | PostgreSQL port，必須是 `1..65535`。 | `5432` |
+| `database` | 是 | string | 要備份的 database 名稱。 | `app1_db` |
+| `username` | 是 | string | PostgreSQL 使用者。 | `postgres` |
+| `password` | 是 | string | PostgreSQL 密碼。 | `change-me` |
 
 ## 備份路徑
 
