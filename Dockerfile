@@ -14,4 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser
+ENV HOME=/home/appuser
+USER appuser
+
 CMD ["python", "-m", "backup_service.main"]
