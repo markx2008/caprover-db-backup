@@ -13,6 +13,7 @@ See `.env.example` for a complete sample.
 - `BACKUP_CRON`: cron expression, such as `0 3 * * *`.
 - `TZ`: timezone, such as `Asia/Taipei`.
 - `RUN_ON_START`: `true` to run one backup cycle at container startup.
+- `LOG_LEVEL`: log level, such as `INFO`.
 - `S3_ENDPOINT`: S3-compatible endpoint URL.
 - `S3_ACCESS_KEY`: S3 access key.
 - `S3_SECRET_KEY`: S3 secret key.
