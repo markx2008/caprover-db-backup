@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
-import time
+import signal
+import threading
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -48,6 +49,14 @@ def main() -> None:
     logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s %(message)s")
     config = load_config(os.environ)
     s3_client = create_s3_client(config)
+    stop_event = threading.Event()
+
+    def handle_shutdown(signum, _frame) -> None:
+        LOGGER.info("Received signal %s, shutting down backup scheduler", signum)
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, handle_shutdown)
+    signal.signal(signal.SIGINT, handle_shutdown)
 
     if config.run_on_start:
         run_once(config, s3_client)
@@ -65,9 +74,8 @@ def main() -> None:
     LOGGER.info("Backup scheduler started with cron '%s'", config.backup_cron)
 
     try:
-        while True:
-            time.sleep(3600)
-    except KeyboardInterrupt:
+        stop_event.wait()
+    finally:
         LOGGER.info("Shutting down backup scheduler")
         scheduler.shutdown()
 
