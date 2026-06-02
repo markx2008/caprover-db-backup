@@ -33,8 +33,18 @@ flowchart LR
 1. 容器啟動後讀取 ENV，建立 S3 client，並依 `RUN_ON_START` 決定是否立即備份一次。
 2. `APScheduler` 在 Python process 內依 `BACKUP_CRON` 觸發備份，不需要 Linux `cron` daemon。
 3. 每次備份會逐一讀取 `DATABASES_JSON` 裡的 database 設定。
-4. 容器內執行 `pg_dump -Fc`，把每個 database dump 成 `/tmp` 裡的暫存 `.dump` 檔。
+4. 容器內執行 PostgreSQL client 18 的 `pg_dump -Fc`，把每個 database dump 成 `/tmp` 裡的暫存 `.dump` 檔。
 5. `pg_dump` 成功後才上傳到 S3-compatible storage，最後刪除 `/tmp` 暫存檔。
+
+## PostgreSQL Client 版本
+
+此 image 固定安裝 PostgreSQL client 18，備份時會執行：
+
+```text
+/usr/lib/postgresql/18/bin/pg_dump
+```
+
+`pg_dump` 的 major version 會影響相容性。建議 `pg_dump` major version 等於或高於 PostgreSQL server major version。此 image 主要針對 PostgreSQL 18 database 使用。
 
 ## CapRover ENV 範例
 
@@ -130,9 +140,25 @@ pg_restore -h <host> -U <user> -d <database> backup.dump
 
 部署後在 CapRover app 的 Environment Variables 填入上方 ENV。此服務不需要 persistent volume，因為備份檔只會暫存在容器 `/tmp`，上傳完成或失敗後都會清除。
 
+也可以直接使用 GitHub Container Registry image：
+
+```text
+ghcr.io/markx2008/caprover-db-backup:latest
+```
+
+推送到 `master` 時 GitHub Actions 會發布：
+
+```text
+ghcr.io/markx2008/caprover-db-backup:latest
+ghcr.io/markx2008/caprover-db-backup:sha-<short-sha>
+```
+
+推送 `v*.*.*` tag 時會發布對應版本 tag。
+
 ## 注意事項
 
 - 備份容器本身只負責排程、`pg_dump` 和 S3 上傳；網路連線能力由部署環境提供。
+- image 內固定使用 PostgreSQL client 18。
 - ENV 使用通用 `S3_` 命名。
 - 服務不會刪除舊備份；保留策略請在 NAS、MinIO 或 S3 lifecycle 設定。
 - 單一 database 備份失敗不會中斷其他 database 的備份。

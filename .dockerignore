@@ -1,4 +1,5 @@
 .git
+.github
 .worktrees
 .pytest_cache
 **/__pycache__/

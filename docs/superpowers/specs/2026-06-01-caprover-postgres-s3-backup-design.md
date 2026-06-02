@@ -28,7 +28,7 @@ pg_dump -Fc
 
 This produces `.dump` files that can be restored with `pg_restore`.
 
-The Docker image must include the PostgreSQL client package so `pg_dump` is available at runtime.
+The Docker image must include PostgreSQL client 18 so `/usr/lib/postgresql/18/bin/pg_dump` is available at runtime.
 
 ## Configuration
 
@@ -128,6 +128,7 @@ The implementation should include:
 - S3 uploader using S3-compatible settings.
 - Cron scheduler.
 - Dockerfile suitable for CapRover deployment.
+- GitHub Actions workflow that publishes the Docker image to GitHub Container Registry.
 - README with CapRover deployment notes and ENV examples.
 - Example ENV file with placeholder values.
 

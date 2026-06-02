@@ -111,7 +111,7 @@ def test_pg_dump_command_uses_database_connection_fields(tmp_path, monkeypatch):
         temp_dir=tmp_path,
     )
 
-    assert captured["command"][:9] == ["pg_dump", "-Fc", "--host", "100.64.0.1", "--port", "5432", "--username", "postgres", "--dbname"]
+    assert captured["command"][:9] == ["/usr/lib/postgresql/18/bin/pg_dump", "-Fc", "--host", "100.64.0.1", "--port", "5432", "--username", "postgres", "--dbname"]
     assert "app1_db" in captured["command"]
     assert captured["env"]["PGPASSWORD"] == "secret"
 

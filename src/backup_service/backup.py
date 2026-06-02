@@ -12,6 +12,7 @@ from backup_service.config import DatabaseConfig, S3Config
 from backup_service.s3_paths import build_backup_key
 
 LOGGER = logging.getLogger(__name__)
+PG_DUMP_PATH = "/usr/lib/postgresql/18/bin/pg_dump"
 
 
 @dataclass(frozen=True)
@@ -60,7 +61,7 @@ def _run_pg_dump(db: DatabaseConfig, output_file: Path) -> None:
     env = os.environ.copy()
     env["PGPASSWORD"] = db.password
     command = [
-        "pg_dump",
+        PG_DUMP_PATH,
         "-Fc",
         "--host",
         db.host,
