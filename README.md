@@ -8,16 +8,16 @@
 
 ```mermaid
 flowchart LR
-    subgraph CapRover[CapRover]
-        App[Backup Container]
-        Scheduler[Python APScheduler]
-        PgDump[pg_dump]
-        Tmp[/tmp 暫存 .dump]
+    subgraph CapRover["CapRover"]
+        App["Backup Container"]
+        Scheduler["Python APScheduler"]
+        PgDump["pg_dump"]
+        Tmp["/tmp temporary .dump"]
     end
 
-    Db1[(PostgreSQL DB 1)]
-    Db2[(PostgreSQL DB 2)]
-    S3[(S3-compatible Storage)]
+    Db1["PostgreSQL DB 1"]
+    Db2["PostgreSQL DB 2"]
+    S3["S3-compatible Storage"]
 
     App --> Scheduler
     Scheduler --> PgDump
@@ -25,7 +25,7 @@ flowchart LR
     PgDump --> Db2
     PgDump --> Tmp
     Tmp --> S3
-    App -. 上傳後刪除暫存檔 .-> Tmp
+    App -. "delete temp file after upload" .-> Tmp
 ```
 
 ## 備份流程
@@ -69,6 +69,10 @@ DATABASES_JSON=[{"name":"app1","host":"postgres-1.example.local","port":5432,"da
 ```
 
 ## ENV 參數說明
+
+必填 ENV：`BACKUP_CRON`、`S3_ENDPOINT`、`S3_ACCESS_KEY`、`S3_SECRET_KEY`、`S3_BUCKET`、`DATABASES_JSON`。
+
+選填 ENV：`TZ`、`RUN_ON_START`、`LOG_LEVEL`、`S3_REGION`、`S3_PREFIX`、`S3_FORCE_PATH_STYLE`、`S3_SECURE`。未設定時會使用下表預設值。
 
 | 參數 | 必填 | 預設值 | 說明 | 範例 |
 | --- | --- | --- | --- | --- |
